@@ -127,7 +127,7 @@ function hoistFunctionEnvironment(
   );
   const inConstructor = thisEnvFn && thisEnvFn.node.kind === "constructor";
 
-  if (thisEnvFn.isClassProperty()) {
+  if (thisEnvFn.isClassProperty() || thisEnvFn.isClassPrivateProperty()) {
     throw fnPath.buildCodeFrameError(
       "Unable to transform arrow inside class property",
     );
@@ -151,6 +151,7 @@ function hoistFunctionEnvironment(
 
     const allSuperCalls = [];
     thisEnvFn.traverse({
+<<<<<<< HEAD
       Function: child => {
         if (
           child.isArrowFunctionExpression() ||
@@ -159,6 +160,12 @@ function hoistFunctionEnvironment(
         ) {
           return;
         }
+=======
+      Function: (child) => {
+        if (child.isArrowFunctionExpression() ||
+          child.isClassProperty() || this.isClassPrivateProperty() ||
+          child === fnPath) return;
+>>>>>>> PrivateFields first draft
         child.skip();
       },
       CallExpression(child) {
@@ -530,7 +537,10 @@ function getScopeInformation(fnPath) {
 
   fnPath.traverse({
     Function(child) {
-      if (child.isArrowFunctionExpression() || child.isClassProperty()) return;
+      if (child.isArrowFunctionExpression() ||
+        child.isClassProperty() ||
+        child.isClassPrivateProperty()) return;
+
       child.skip();
     },
     ThisExpression(child) {

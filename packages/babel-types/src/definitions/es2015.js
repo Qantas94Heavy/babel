@@ -80,7 +80,7 @@ defineType("ClassBody", {
     body: {
       validate: chain(
         assertValueType("array"),
-        assertEach(assertNodeType("ClassMethod", "ClassProperty")),
+        assertEach(assertNodeType("ClassMethod", "ClassProperty", "ClassPrivateProperty")),
       ),
     },
   },
