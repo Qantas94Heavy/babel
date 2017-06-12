@@ -86,6 +86,7 @@ defineType("ClassBody", {
             "ClassProperty",
             "TSDeclareMethod",
             "TSIndexSignature",
+            "ClassPrivateProperty",
           ),
         ),
       ),
