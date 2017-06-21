@@ -1,8 +1,8 @@
 {
-  "name": "babel-plugin-syntax-class-properties",
-  "version": "6.13.0",
-  "description": "Allow parsing of class properties",
-  "repository": "https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-class-properties",
+  "name": "babel-plugin-syntax-class-private-properties",
+  "version": "0.1.0",
+  "description": "Allow parsing of class private properties",
+  "repository": "https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-class-private-properties",
   "license": "MIT",
   "main": "lib/index.js",
   "keywords": [

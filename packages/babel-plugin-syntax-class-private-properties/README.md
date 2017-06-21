@@ -1,11 +1,11 @@
-# babel-plugin-syntax-class-properties
+# babel-plugin-syntax-class-private-properties
 
-Allow parsing of class properties.
+Allow parsing of class private properties.
 
 ## Installation
 
 ```sh
-npm install --save-dev babel-plugin-syntax-class-properties
+npm install --save-dev babel-plugin-syntax-class-private-properties
 ```
 
 ## Usage
@@ -16,20 +16,20 @@ npm install --save-dev babel-plugin-syntax-class-properties
 
 ```json
 {
-  "plugins": ["syntax-class-properties"]
+  "plugins": ["syntax-class-private-properties"]
 }
 ```
 
 ### Via CLI
 
 ```sh
-babel --plugins syntax-class-properties script.js
+babel --plugins syntax-class-private-properties script.js
 ```
 
 ### Via Node API
 
 ```javascript
 require("babel-core").transform("code", {
-  plugins: ["syntax-class-properties"]
+  plugins: ["syntax-class-private-properties"]
 });
 ```

@@ -452,6 +452,27 @@ helpers.possibleConstructorReturn = template(`
   });
 `);
 
+helpers.privateFieldsCheckNonSpec = template(`
+  (function (self, prefix, name) {
+    var prop = "_private_class" + prefix + "_" + name;
+    if (!(prop in self)) {
+      throw new TypeError("Invalid private field reference '#" + name + "'");
+    }
+    return self;
+  });
+`);
+
+// TODO: fix
+helpers.privateFieldsCheckSpec = template(`
+  (function (self, prefix, name) {
+    var prop = prefix + name;
+    if (!(prop in self)) {
+      throw new TypeError("Accessing non-existent private field '#" + name + "'");
+    }
+    return self[prop];
+  });
+`);
+
 helpers.selfGlobal = template(`
   typeof global === "undefined" ? self : global
 `);
