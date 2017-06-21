@@ -94,3 +94,18 @@ defineType("ClassProperty", {
     // todo: Has optional "variance" property for flow plugin
   },
 });
+
+defineType("ClassPrivateProperty", {
+  visitor: ["key", "value", "typeAnnotation", "decorators"],
+  builder: ["key", "value", "typeAnnotation", "decorators"],
+  aliases: ["Property"],
+  fields: {
+    key: {
+      validate: assertValueType("Identifier"),
+    },
+    value: {
+      validate: assertNodeType("Expression"),
+      optional: true,
+    },
+  },
+});

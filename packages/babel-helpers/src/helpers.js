@@ -471,6 +471,26 @@ helpers.possibleConstructorReturn = template(`
   });
 `);
 
+helpers.privateFieldsCheckNonSpec = template(`
+  (function (self, prefix, name) {
+    var prop = "_private_class" + prefix + "_" + name;
+    if (!(prop in self)) {
+      throw new TypeError("Invalid private field reference '#" + name + "'");
+    }
+    return self;
+  });
+`);
+
+helpers.privateFieldsCheckSpec = template(`
+  (function (lookup, obj, name) {
+    var privateFields = lookup.get(obj);
+    if (!lookup || !(name in privateFields)) {
+      throw new TypeError("Invalid private field reference '#" + name + "'");
+    }
+    return privateFields;
+  });
+`);
+
 helpers.selfGlobal = template(`
   typeof global === "undefined" ? self : global
 `);

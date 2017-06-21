@@ -151,21 +151,15 @@ function hoistFunctionEnvironment(
 
     const allSuperCalls = [];
     thisEnvFn.traverse({
-<<<<<<< HEAD
       Function: child => {
         if (
           child.isArrowFunctionExpression() ||
           child.isClassProperty() ||
+          child.isClassPrivateProperty() ||
           child === fnPath
         ) {
           return;
         }
-=======
-      Function: (child) => {
-        if (child.isArrowFunctionExpression() ||
-          child.isClassProperty() || this.isClassPrivateProperty() ||
-          child === fnPath) return;
->>>>>>> PrivateFields first draft
         child.skip();
       },
       CallExpression(child) {
