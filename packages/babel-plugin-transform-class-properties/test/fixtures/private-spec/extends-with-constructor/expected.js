@@ -6,9 +6,10 @@ var Point = function (_Foo) {
   babelHelpers.inherits(Point, _Foo);
 
   function Point(x = 0, y = 0) {
-    babelHelpers.classCallCheck(this, Point);
+    var _this;
 
-    var _this = babelHelpers.possibleConstructorReturn(this, (Point.__proto__ || Object.getPrototypeOf(Point)).call(this));
+    babelHelpers.classCallCheck(this, Point);
+    _this = babelHelpers.possibleConstructorReturn(this, (Point.__proto__ || Object.getPrototypeOf(Point)).call(this));
 
     _initialiseProps.call(_this);
 
