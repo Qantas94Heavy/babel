@@ -181,6 +181,7 @@ export default function({ types: t }) {
 
         // Allow us to check whether a private field declaration is duplicate or not.
         const validPrivateFieldNames = new Set();
+        let hasStaticPrivateFields = false;
 
         for (const path of privateFieldPaths) {
           const node = path.node;
@@ -191,6 +192,10 @@ export default function({ types: t }) {
             throw path.buildCodeFrameError(
               `Duplicate private field declaration '#${name}'`,
             );
+          }
+
+          if (node.static) {
+            hasStaticPrivateFields = true;
           }
 
           validPrivateFieldNames.add(name);
@@ -215,6 +220,10 @@ export default function({ types: t }) {
 
         const privateFieldObjRef = path.scope.generateUidIdentifier(
           "private_field_obj",
+        );
+
+        const privateFieldStaticObjRef = path.scope.generateUidIdentifier(
+          "private_field_" + ref.name,
         );
 
         // Non-spec mode: prefix for the private field class property.
@@ -262,6 +271,28 @@ export default function({ types: t }) {
                 ),
               ),
             );
+
+            if (hasStaticPrivateFields) {
+              // "var private_field_static_obj4 = {};"
+              nodes.push(
+                t.VariableDeclaration("var", [
+                  t.VariableDeclarator(
+                    privateFieldStaticObjRef,
+                    t.ObjectExpression([]),
+                  ),
+                ]),
+              );
+
+              // "privateLookup.set(MyClass, private_field_static_obj4);"
+              nodes.push(
+                t.ExpressionStatement(
+                  t.CallExpression(
+                    t.MemberExpression(privateSpecStoreId, t.Identifier("set")),
+                    [ref, privateFieldStaticObjRef],
+                  ),
+                ),
+              );
+            }
           } else {
             // We really only want the number.
             privateNonSpecPrefix = path.scope.generateUid("").replace("_", "");
@@ -283,42 +314,44 @@ export default function({ types: t }) {
               );
             }
           } else if (prop.isClassPrivateProperty()) {
+            let lhs;
             if (state.opts.spec) {
               // "#foo = bar();" -> "private_field_obj3.foo = bar();"
               // We have to specifically write "undefined" so that it is set.
-              instanceBody.push(
-                t.ExpressionStatement(
-                  t.AssignmentExpression(
-                    "=",
-                    t.MemberExpression(
-                      privateFieldObjRef,
-                      t.Identifier(propNode.key.name),
-                    ),
-                    propNode.value || path.scope.buildUndefinedNode(),
-                  ),
-                ),
+              lhs = t.MemberExpression(
+                propNode.static ? privateFieldStaticObjRef : privateFieldObjRef,
+                t.Identifier(propNode.key.name),
               );
             } else {
               // "#foo = bar();" -> "this._private_class2_foo = bar();"
               // It is necessary to set this even if there is no initial value.
-              instanceBody.push(
-                t.ExpressionStatement(
-                  t.AssignmentExpression(
-                    "=",
-                    t.MemberExpression(
-                      t.ThisExpression(),
-                      t.Identifier(
-                        createNonSpecPropName(
-                          privateNonSpecPrefix,
-                          propNode.key.name,
-                        ),
-                      ),
-                    ),
-                    propNode.value || path.scope.buildUndefinedNode(),
+              const target = propNode.static
+                ? t.MemberExpression(
+                    t.ThisExpression(),
+                    t.Identifier("constructor"),
+                  )
+                : t.ThisExpression();
+
+              lhs = t.MemberExpression(
+                target,
+                t.Identifier(
+                  createNonSpecPropName(
+                    privateNonSpecPrefix,
+                    propNode.key.name,
                   ),
                 ),
               );
             }
+
+            instanceBody.push(
+              t.ExpressionStatement(
+                t.AssignmentExpression(
+                  "=",
+                  lhs,
+                  propNode.value || path.scope.buildUndefinedNode(),
+                ),
+              ),
+            );
           } else {
             throw new Error("Internal error: unexpected property type");
           }
