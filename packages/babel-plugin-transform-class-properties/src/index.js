@@ -11,7 +11,6 @@ export default function({ types: t }) {
     PrivateName(path, state) {
       const {
         validPrivateFieldNames,
-        spec,
         privateSpecStoreId,
         privateNonSpecPrefix,
       } = state;
@@ -45,12 +44,21 @@ export default function({ types: t }) {
       // TODO: do we need to improve the error message?
       // An implicit TypeError is thrown if the private field cannot be found at runtime, but at
       // the moment the error would look like "Cannot read property 'x' of undefined".
-      if (spec) {
-        // "a.b.c.#x" -> "privateFieldsCheckSpec(privateLookup, a.b.c, 'x').x"
-        let access = t.CallExpression(
-          state.file.addHelper("privateFieldsCheckSpec"),
-          [privateSpecStoreId, object, t.StringLiteral(name)],
-        );
+      if (state.opts.spec) {
+        let access;
+        if (state.opts.loose) {
+          // "a.b.c.#x" -> "privateLookup.get(a.b.c).x"
+          access = t.CallExpression(
+            t.MemberExpression(privateSpecStoreId, t.Identifier("get")),
+            [object],
+          );
+        } else {
+          // "a.b.c.#x" -> "privateFieldsCheckSpec(privateLookup, a.b.c, 'x').x"
+          access = t.CallExpression(
+            state.file.addHelper("privateFieldsCheckSpec"),
+            [privateSpecStoreId, object, t.StringLiteral(name)],
+          );
+        }
 
         // Make sure that private methods are called with the correct this value. This is only an
         // issue in spec mode as we have a separate WeakMap object to store private fields.
@@ -82,24 +90,28 @@ export default function({ types: t }) {
           createNonSpecPropName(privateNonSpecPrefix, name),
         );
 
-        // Make sure TypeError is thrown for access to non-existent private field.
-        // TODO: This seems to be necessary so that this can remain as a valid LHS in an
-        // AssignmentExpression, but surely there is some cleaner way of adding this?
-        // If it is possible to check where it is being used as a reference and not a value, then
-        // we could conditianally make this shorter.
-        path.parentPath.replaceWith(
-          t.MemberExpression(
-            t.CallExpression(
-              state.file.addHelper("privateFieldsCheckNonSpec"),
-              [
-                object,
-                t.StringLiteral(privateNonSpecPrefix),
-                t.StringLiteral(name),
-              ],
+        if (state.opts.loose) {
+          path.replaceWith(ident);
+        } else {
+          // Make sure TypeError is thrown for access to non-existent private field.
+          // TODO: This seems to be necessary so that this can remain as a valid LHS in an
+          // AssignmentExpression, but surely there is some cleaner way of adding this?
+          // If it is possible to check where it is being used as a reference and not a value, then
+          // we could conditionally make this shorter.
+          path.parentPath.replaceWith(
+            t.MemberExpression(
+              t.CallExpression(
+                state.file.addHelper("privateFieldsCheckNonSpec"),
+                [
+                  object,
+                  t.StringLiteral(privateNonSpecPrefix),
+                  t.StringLiteral(name),
+                ],
+              ),
+              ident,
             ),
-            ident,
-          ),
-        );
+          );
+        }
       }
     },
   };
@@ -434,7 +446,7 @@ export default function({ types: t }) {
             validPrivateFieldNames,
             privateSpecStoreId,
             privateNonSpecPrefix,
-            spec: state.opts.spec,
+            opts: state.opts,
             file: state.file,
           });
         }
