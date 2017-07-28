@@ -28,15 +28,6 @@ export default function({ types: t }) {
         );
       }
 
-      // Handle case where #x shorthand is used.
-      if (!path.parentPath.isMemberExpression()) {
-        // "#x" -> "this.#x"
-        path.replaceWith(t.MemberExpression(t.ThisExpression(), path.node));
-        // Now path is referencing the newly created MemberExpression.
-        // Change path to reference the PrivateName itself.
-        path = path.get("property");
-      }
-
       // The object the private field is (supposed to be) on.
       const object = path.parentPath.node.object;
 
