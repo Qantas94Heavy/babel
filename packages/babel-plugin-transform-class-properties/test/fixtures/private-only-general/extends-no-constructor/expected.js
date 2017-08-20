@@ -2,9 +2,9 @@ class Foo {}
 
 class Point extends Foo {
   constructor(...args) {
-    super(...args);
-    this._private_class_x = 0;
-    this._private_class_y = 0;
+    var _temp;
+
+    return _temp = super(...args), this._private_class_x = 0, this._private_class_y = 0, _temp;
   }
 
   get x() {

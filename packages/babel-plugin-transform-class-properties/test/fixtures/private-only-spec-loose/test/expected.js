@@ -27,7 +27,7 @@ class Point {
   }
 
   toString() {
-    return `Point<${_private_class_wm.get(this).x},${_private_class_wm.get(this).y}>`;
+    return `Point<${_private_class_wm.get(this.constructor).x},${_private_class_wm.get(this).y}>`;
   }
 
   test() {

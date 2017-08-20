@@ -4,16 +4,19 @@ function increment() {
 }
 
 class Point {
-    #x = increment();
-    a  = increment();
-    #y = increment();
-    b  = increment();
+  #x = increment();
+  a  = increment();
 
-    constructor() {}
+  constructor() {
+    this.c = increment();
+  }
 
-    getValues() {
-        return [ #x, this.a, #y, this.b ];
-    }
+  #y = increment();
+  b  = increment();
+
+  getValues() {
+    return [ this.#x, this.a, this.#y, this.b, this.c ];
+  }
 }
 
 const values = new Point().getValues();
@@ -21,3 +24,11 @@ assert.strictEqual(values[0], 0);
 assert.strictEqual(values[1], 1);
 assert.strictEqual(values[2], 2);
 assert.strictEqual(values[3], 3);
+assert.strictEqual(values[4], 4);
+
+const values2 = new Point().getValues();
+assert.strictEqual(values2[0], 5);
+assert.strictEqual(values2[1], 6);
+assert.strictEqual(values2[2], 7);
+assert.strictEqual(values2[3], 8);
+assert.strictEqual(values2[4], 9);

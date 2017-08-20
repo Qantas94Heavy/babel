@@ -45,6 +45,6 @@ var _initialiseProps = function () {
 
   _private_class_wm.set(this, _private_field_obj);
 
-  _private_field_obj.x = undefined;
-  _private_field_obj.y = undefined;
+  _private_field_obj.x = void 0;
+  _private_field_obj.y = void 0;
 };

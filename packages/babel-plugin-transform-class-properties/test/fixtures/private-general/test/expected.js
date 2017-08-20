@@ -16,7 +16,7 @@ var Point = function () {
   }, {
     key: "toString",
     value: function toString() {
-      return `Point<${babelHelpers.privateFieldsCheckNonSpec(this, "", "x")._private_class_x},${babelHelpers.privateFieldsCheckNonSpec(this, "", "y")._private_class_y}>`;
+      return `Point<${babelHelpers.privateFieldsCheckNonSpec(this.constructor, "", "x")._private_class_x},${babelHelpers.privateFieldsCheckNonSpec(this, "", "y")._private_class_y}>`;
     }
   }, {
     key: "test",

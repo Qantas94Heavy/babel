@@ -30,8 +30,8 @@ var Person = function () {
 
     _private_class_wm.set(this, _private_field_obj);
 
-    _private_field_obj.id = undefined;
-    _private_field_obj.makeGreeting = undefined;
+    _private_field_obj.id = void 0;
+    _private_field_obj.makeGreeting = void 0;
   }, _temp;
 }();
 

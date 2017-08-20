@@ -33,6 +33,6 @@ class Point {
 }
 
 var _initialiseProps = function () {
-  this._private_class_x = undefined;
-  this._private_class_y = undefined;
+  this._private_class_x = void 0;
+  this._private_class_y = void 0;
 };

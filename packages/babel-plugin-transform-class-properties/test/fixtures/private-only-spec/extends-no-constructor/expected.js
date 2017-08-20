@@ -2,13 +2,9 @@ class Foo {}
 
 class Point extends Foo {
   constructor(...args) {
-    super(...args);
-    var _private_field_obj = {};
+    var _temp, _private_field_obj;
 
-    _private_class_wm.set(this, _private_field_obj);
-
-    _private_field_obj.x = 0;
-    _private_field_obj.y = 0;
+    return _temp = super(...args), _private_field_obj = {}, _private_class_wm.set(this, _private_field_obj), _private_field_obj.x = 0, _private_field_obj.y = 0, _temp;
   }
 
   get x() {

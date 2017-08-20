@@ -6,19 +6,19 @@ class Point extends Foo {
 
     constructor(x = 0, y = 0) {
       super();
-      #x = +x;
-      #y = +y;
+      this.#x = +x;
+      this.#y = +y;
 
       this.test = 1;
     }
 
-    get x() { return #x }
-    set x(value) { #x = +value }
+    get x() { return this.#x }
+    set x(value) { this.#x = +value }
 
-    get y() { return #y }
-    set y(value) { #y = +value }
+    get y() { return this.#y }
+    set y(value) { this.#y = +value }
 
-    equals(p) { return #x === p.#x && #y === p.#y }
+    equals(p) { return this.#x === p.#x && this.#y === p.#y }
 
-    toString() { return `Point<${ #x },${ #y }>` }
+    toString() { return `Point<${ this.#x },${ this.#y }>` }
 }

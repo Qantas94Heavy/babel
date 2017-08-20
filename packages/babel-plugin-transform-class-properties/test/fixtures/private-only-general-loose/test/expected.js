@@ -27,7 +27,7 @@ class Point {
   }
 
   toString() {
-    return `Point<${this._private_class_x},${this._private_class_y}>`;
+    return `Point<${this.constructor._private_class_x},${this._private_class_y}>`;
   }
 
   test() {

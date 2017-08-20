@@ -16,7 +16,7 @@ var Point = function () {
   }, {
     key: "toString",
     value: function toString() {
-      return `Point<${_private_class_wm.get(this).x},${_private_class_wm.get(this).y}>`;
+      return `Point<${_private_class_wm.get(this.constructor).x},${_private_class_wm.get(this).y}>`;
     }
   }, {
     key: "test",

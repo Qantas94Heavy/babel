@@ -27,7 +27,7 @@ class Point {
   }
 
   toString() {
-    return `Point<${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x},${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y}>`;
+    return `Point<${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x},${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y}>`;
   }
 
   test() {

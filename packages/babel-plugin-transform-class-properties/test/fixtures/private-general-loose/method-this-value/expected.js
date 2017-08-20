@@ -26,8 +26,8 @@ var Person = function () {
     }]);
     return Person;
   }(), _initialiseProps = function () {
-    this._private_class_id = undefined;
-    this._private_class_makeGreeting = undefined;
+    this._private_class_id = void 0;
+    this._private_class_makeGreeting = void 0;
   }, _temp;
 }();
 

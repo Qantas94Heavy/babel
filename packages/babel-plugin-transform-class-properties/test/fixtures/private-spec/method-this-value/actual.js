@@ -3,7 +3,7 @@ const Person = (function () {
   return class Person {
     #id;
     #makeGreeting;
-
+    
     constructor(name, makeGreeting) {
       this.name = name;
       this.#id = ids++;
