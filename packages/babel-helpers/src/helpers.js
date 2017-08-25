@@ -481,13 +481,81 @@ helpers.privateFieldsCheckNonSpec = template(`
   });
 `);
 
-helpers.privateFieldsCheckSpec = template(`
+helpers.privateFieldsGetSpec = template(`
   (function (lookup, obj, name) {
-    var privateFields = lookup.get(obj);
-    if (!lookup || !(name in privateFields)) {
-      throw new TypeError("Invalid private field reference '#" + name + "'");
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      return privateField.get(obj);
     }
-    return privateFields;
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsSetSpec = template(`
+  (function (lookup, obj, name, value) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      return privateField.set(obj, value);
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsCallSpec = template(`
+  (function (lookup, obj, name, args) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      return privateField.get(obj).apply(obj, args);
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsPreInc = template(`
+  (function (lookup, obj, name) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      var value = +privateField.get(obj);
+      privateField.set(obj, value + 1);
+      return value + 1;
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsPreDec = template(`
+  (function (lookup, obj, name) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      var value = +privateField.get(obj);
+      privateField.set(obj, value - 1);
+      return value - 1;
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsPostInc = template(`
+  (function (lookup, obj, name, args) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      var value = +privateField.get(obj);
+      privateField.set(obj, value + 1);
+      return value;
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
+  });
+`);
+
+helpers.privateFieldsPostDec = template(`
+  (function (lookup, obj, name, args) {
+    var privateField = lookup[name];
+    if (privateField && privateField.has(obj)) {
+      var value = +privateField.get(obj);
+      privateField.set(obj, value - 1);
+      return value;
+    }
+    throw new TypeError("Invalid private field reference '#" + name + "'");
   });
 `);
 

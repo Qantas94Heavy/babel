@@ -7,103 +7,166 @@ export default function({ types: t }) {
     return `_private_class${prefix}_${name}`;
   }
 
-  const methodVisitor = {
-    PrivateName(path, state) {
-      const {
-        validPrivateFieldNames,
-        privateSpecStoreId,
-        privateNonSpecPrefix,
-      } = state;
+  function PrivateName(path, state) {
+    const {
+      validPrivateFieldNames,
+      privateSpecStoreId,
+      privateNonSpecPrefix,
+    } = state;
 
-      // TODO: rename to something like path.node.id.name?
-      const name = path.node.name.name;
+    // TODO: rename to something like path.node.id.name?
+    const name = path.node.name.name;
 
-      // References to PrivateNames which are not lexically present cause an early error.
-      // This won't catch cases where it is used on an invalid object -- these are treated as
-      // a runtime TypeError.
-      // TODO: better error message?
-      if (!validPrivateFieldNames.has(name)) {
-        throw path.buildCodeFrameError(
-          `Invalid private field reference '#${name}'`,
-        );
-      }
+    // References to PrivateNames which are not lexically present cause an early error.
+    // This won't catch cases where it is used on an invalid object -- these are treated as
+    // a runtime TypeError.
+    if (!validPrivateFieldNames.has(name)) {
+      throw path.buildCodeFrameError(
+        `Invalid private field reference '#${name}'`,
+      );
+    }
 
-      // The object the private field is (supposed to be) on.
-      const object = path.parentPath.node.object;
+    const parentPath = path.parentPath;
 
-      // In spec mode, private properties are fully encapsulated using WeakMap.
-      // TODO: do we need to improve the error message?
-      // An implicit TypeError is thrown if the private field cannot be found at runtime, but at
-      // the moment the error would look like "Cannot read property 'x' of undefined".
-      if (state.opts.spec) {
-        let access;
-        if (state.opts.loose) {
-          // "a.b.c.#x" -> "privateLookup.get(a.b.c).x"
-          access = t.CallExpression(
-            t.MemberExpression(privateSpecStoreId, t.Identifier("get")),
-            [object],
-          );
-        } else {
-          // "a.b.c.#x" -> "privateFieldsCheckSpec(privateLookup, a.b.c, 'x').x"
-          access = t.CallExpression(
-            state.file.addHelper("privateFieldsCheckSpec"),
-            [privateSpecStoreId, object, t.StringLiteral(name)],
-          );
-        }
+    // The object the private field is (supposed to be) on.
+    const object = parentPath.node.object;
 
-        // Make sure that private methods are called with the correct this value. This is only an
-        // issue in spec mode as we have a separate WeakMap object to store private fields.
-        // "a.b.c.#x(...args)" -> "privateFieldsCheckSpec(privateLookup, a.b.c, 'x').x.apply(a.b.c, args)"
-        // CallExpression -> MemberExpression -> PrivateName
-        if (path.parentPath.parentPath.isCallExpression()) {
-          access = t.MemberExpression(access, t.Identifier(name));
+    // In spec mode, private properties are fully encapsulated using WeakMap.
+    if (state.opts.spec) {
+      // We check the grandparent path as that is where the correct expression type will be.
+      // AssignmentExpression/CallExpression -> MemberExpression -> PrivateName
 
-          // Replace parent properties with lookup to private field WeakMap.
-          path.parentPath.get("object").replaceWith(access);
+      // "a.b.c.#x" -> "privateFieldsGetSpec(_private2, a.b.c, 'x')"
+      parentPath.replaceWith(
+        t.CallExpression(state.file.addHelper("privateFieldsGetSpec"), [
+          privateSpecStoreId,
+          object,
+          t.StringLiteral(name),
+        ]),
+      );
 
-          path.replaceWith(t.Identifier("apply"));
+      path.skip();
+      parentPath.skip();
+    } else {
+      // In non-spec mode, we simply use prefixed property names on the instance.
+      const ident = t.Identifier(
+        createNonSpecPropName(privateNonSpecPrefix, name),
+      );
 
-          // "#(a, b, c)" -> "(correctThis, [a, b, c])"
-          path.parentPath.parentPath.node.arguments = [
-            object,
-            t.ArrayExpression(path.parentPath.parentPath.node.arguments),
-          ];
-        } else {
-          // Replace parent properties with lookup to private field WeakMap.
-          path.parentPath.get("object").replaceWith(access);
-
-          // Replace private name with standard identifer property.
-          path.replaceWith(t.Identifier(name));
-        }
+      // If loose mode is enabled in non-spec mode, a TypeError will NOT be thrown upon
+      // accessing an undefined object not caught statically.
+      if (state.opts.loose) {
+        path.replaceWith(ident);
       } else {
-        // In non-spec mode, we simply use prefixed property names on the instance.
-        const ident = t.Identifier(
-          createNonSpecPropName(privateNonSpecPrefix, name),
+        // Make sure TypeError is thrown for access to non-existent private field.
+        // TODO: This seems to be necessary so that this can remain as a valid LHS in an
+        // AssignmentExpression, but surely there is some cleaner way of adding this?
+        // If it is possible to check where it is being used as a reference and not a value, then
+        // we could conditionally make this shorter.
+        parentPath.replaceWith(
+          t.MemberExpression(
+            t.CallExpression(
+              state.file.addHelper("privateFieldsCheckNonSpec"),
+              [
+                object,
+                t.StringLiteral(privateNonSpecPrefix),
+                t.StringLiteral(name),
+              ],
+            ),
+            ident,
+          ),
+        );
+      }
+    }
+  }
+
+  const methodVisitor = {
+    PrivateName,
+    AssignmentExpression(path, state) {
+      const { privateSpecStoreId } = state;
+
+      if (!state.opts.spec) return;
+      if (path.node.operator === "=") {
+        path.skip();
+        const lhs = path.node.left;
+        if (t.isMemberExpression(lhs) && t.isPrivateName(lhs.property)) {
+          const name = lhs.property.name.name;
+
+          // "a.b.c.#x = foo()" -> "privateFieldsSetSpec(_private2, a.b.c, 'x', foo())"
+          path.replaceWith(
+            t.CallExpression(state.file.addHelper("privateFieldsSetSpec"), [
+              privateSpecStoreId,
+              lhs.object,
+              t.StringLiteral(name),
+              path.node.right,
+            ]),
+          );
+
+          path.get("callee").traverse(methodVisitor, state);
+          for (const arg of path.get("arguments")) {
+            arg.traverse(methodVisitor, state);
+          }
+        }
+
+        path.skip();
+      }
+    },
+    // Handle setting from ++ and -- according to spec.
+    UpdateExpression(path, state) {
+      const { privateSpecStoreId } = state;
+
+      if (!state.opts.spec) return;
+
+      path.skip();
+      const lhs = path.node.argument;
+      if (t.isMemberExpression(lhs) && t.isPrivateName(lhs.property)) {
+        const name = lhs.property.name.name;
+
+        // "a.b.c.#x = foo()" -> "privateFieldsSetSpec(_private2, a.b.c, 'x', foo())"
+        path.replaceWith(
+          t.CallExpression(
+            state.file.addHelper(
+              `privateFields${path.node.prefix ? "Pre" : "Post"}${path.node
+                .operator === "++"
+                ? "Inc"
+                : "Dec"}`,
+            ),
+            [privateSpecStoreId, lhs.object, t.StringLiteral(name)],
+          ),
         );
 
-        if (state.opts.loose) {
-          path.replaceWith(ident);
-        } else {
-          // Make sure TypeError is thrown for access to non-existent private field.
-          // TODO: This seems to be necessary so that this can remain as a valid LHS in an
-          // AssignmentExpression, but surely there is some cleaner way of adding this?
-          // If it is possible to check where it is being used as a reference and not a value, then
-          // we could conditionally make this shorter.
-          path.parentPath.replaceWith(
-            t.MemberExpression(
-              t.CallExpression(
-                state.file.addHelper("privateFieldsCheckNonSpec"),
-                [
-                  object,
-                  t.StringLiteral(privateNonSpecPrefix),
-                  t.StringLiteral(name),
-                ],
-              ),
-              ident,
-            ),
-          );
+        path.get("argument").traverse(methodVisitor, state);
+      }
+
+      path.skip();
+    },
+    CallExpression(path, state) {
+      const { privateSpecStoreId } = state;
+
+      if (!state.opts.spec) return;
+
+      path.skip();
+      const lhs = path.node.callee;
+      if (t.isMemberExpression(lhs) && t.isPrivateName(lhs.property)) {
+        const name = lhs.property.name.name;
+
+        // "a.b.c.#x(...args)" -> "privateFieldsCallSpec(privateLookup, a.b.c, 'x', args)"
+        path.replaceWith(
+          t.CallExpression(state.file.addHelper("privateFieldsCallSpec"), [
+            privateSpecStoreId,
+            lhs.object,
+            t.StringLiteral(name),
+            t.ArrayExpression(path.node.arguments),
+          ]),
+        );
+
+        path.get("callee").traverse(methodVisitor, state);
+        for (const arg of path.get("arguments")) {
+          arg.traverse(methodVisitor, state);
         }
       }
+
+      path.skip();
     },
   };
 
@@ -184,7 +247,6 @@ export default function({ types: t }) {
 
         // Allow us to check whether a private field declaration is duplicate or not.
         const validPrivateFieldNames = new Set();
-        let hasStaticPrivateFields = false;
 
         for (const path of privateFieldPaths) {
           const node = path.node;
@@ -196,11 +258,6 @@ export default function({ types: t }) {
               `Duplicate private field declaration '#${name}'`,
             );
           }
-
-          if (node.static) {
-            hasStaticPrivateFields = true;
-          }
-
           validPrivateFieldNames.add(name);
         }
 
@@ -218,97 +275,60 @@ export default function({ types: t }) {
           ref = path.node.id;
         }
 
-        // Spec mode: Identifier for the WeakMap lookup object.
-        let privateSpecStoreId;
-
-        const privateFieldObjRef = path.scope.generateUidIdentifier(
-          "private_field_obj",
-        );
-
-        const privateFieldStaticObjRef = path.scope.generateUidIdentifier(
-          "private_field_" + ref.name,
-        );
+        // Spec mode: Identifier for the private fields lookup object.
+        const privateSpecStoreId = path.scope.generateUidIdentifier("private");
 
         // Non-spec mode: prefix for the private field class property.
-        let privateNonSpecPrefix;
+        // We really only want the number.
+        const privateNonSpecPrefix = path.scope
+          .generateUid("")
+          .replace("_", "");
 
         let instanceBody = [];
 
         if (privateFieldPaths.length > 0) {
           if (state.opts.spec) {
-            // Create WeakMap object for spec mode.
-            privateSpecStoreId = path.scope.generateUidIdentifier(
-              "private_class_wm",
-            );
-
             // TODO: sometimes it appears this is not optimised out, even if we don't need it?
             // ^^^ Probably because it's being created in global scope, but how to avoid that?
-            // Create the private field WeakMap.
+            // Create an object to store weak maps for each private field name.
+            // "var _private2 = Object.create(null);"
             nodes.push(
               t.VariableDeclaration("var", [
                 t.VariableDeclarator(
                   privateSpecStoreId,
-                  t.NewExpression(t.Identifier("WeakMap"), []),
-                ),
-              ]),
-            );
-
-            // There needs to be an object to write private field values to.
-            // Reference the private field object so we don't have to get it multiple times.
-            // "var private_field_obj3 = {};"
-            instanceBody.push(
-              t.VariableDeclaration("var", [
-                t.VariableDeclarator(
-                  privateFieldObjRef,
-                  t.ObjectExpression([]),
-                ),
-              ]),
-            );
-
-            // "privateLookup.set(this, private_field_obj3);"
-            instanceBody.push(
-              t.ExpressionStatement(
-                t.CallExpression(
-                  t.MemberExpression(privateSpecStoreId, t.Identifier("set")),
-                  [t.ThisExpression(), privateFieldObjRef],
-                ),
-              ),
-            );
-
-            if (hasStaticPrivateFields) {
-              // "var private_field_static_obj4 = {};"
-              nodes.push(
-                t.VariableDeclaration("var", [
-                  t.VariableDeclarator(
-                    privateFieldStaticObjRef,
-                    t.ObjectExpression([]),
+                  t.CallExpression(
+                    t.MemberExpression(
+                      t.Identifier("Object"),
+                      t.Identifier("create"),
+                    ),
+                    [t.nullLiteral()],
                   ),
-                ]),
-              );
+                ),
+              ]),
+            );
 
-              // "privateLookup.set(MyClass, private_field_static_obj4);"
+            // There needs to be weak maps to write private field values to.
+            for (const name of validPrivateFieldNames) {
+              // "_private2.x = new WeakMap();"
               nodes.push(
                 t.ExpressionStatement(
-                  t.CallExpression(
-                    t.MemberExpression(privateSpecStoreId, t.Identifier("set")),
-                    [ref, privateFieldStaticObjRef],
+                  t.AssignmentExpression(
+                    "=",
+                    t.MemberExpression(privateSpecStoreId, t.Identifier(name)),
+                    t.newExpression(t.Identifier("WeakMap"), []),
                   ),
                 ),
               );
             }
-          } else {
-            // We really only want the number.
-            privateNonSpecPrefix = path.scope.generateUid("").replace("_", "");
           }
         }
 
         for (const prop of props) {
           const propNode = prop.node;
+          const isStatic = propNode.static;
           if (propNode.decorators && propNode.decorators.length > 0) continue;
 
           if (prop.isClassProperty()) {
-            const isStatic = propNode.static;
-
             if (isStatic) {
               nodes.push(buildClassProperty(ref, propNode, path.scope));
             } else {
@@ -317,44 +337,50 @@ export default function({ types: t }) {
               );
             }
           } else if (prop.isClassPrivateProperty()) {
-            let lhs;
+            // We have to specifically write "undefined" so that it is set.
+            const rhs = propNode.value || path.scope.buildUndefinedNode();
+
+            // We'll use "this.constructor" to refer back to the constructor
+            // for static private fields.
+            const target = isStatic
+              ? t.MemberExpression(
+                  t.ThisExpression(),
+                  t.Identifier("constructor"),
+                )
+              : t.ThisExpression();
+
             if (state.opts.spec) {
-              // "#foo = bar();" -> "private_field_obj3.foo = bar();"
-              // We have to specifically write "undefined" so that it is set.
-              lhs = t.MemberExpression(
-                propNode.static ? privateFieldStaticObjRef : privateFieldObjRef,
-                t.Identifier(propNode.key.name),
+              // "this.#foo = bar();" -> "_private.foo.set(this, bar());"
+              instanceBody.push(
+                t.ExpressionStatement(
+                  t.CallExpression(
+                    t.MemberExpression(
+                      t.MemberExpression(
+                        privateSpecStoreId,
+                        t.Identifier(propNode.key.name),
+                      ),
+                      t.Identifier("set"),
+                    ),
+                    [target, rhs],
+                  ),
+                ),
               );
             } else {
-              // "#foo = bar();" -> "this._private_class2_foo = bar();"
-              // It is necessary to set this even if there is no initial value.
-              const target = propNode.static
-                ? t.MemberExpression(
-                    t.ThisExpression(),
-                    t.Identifier("constructor"),
-                  )
-                : t.ThisExpression();
+              // "this.#foo = bar();" -> "this._private_class2_foo = bar();"
+              const propName = t.Identifier(
+                createNonSpecPropName(privateNonSpecPrefix, propNode.key.name),
+              );
 
-              lhs = t.MemberExpression(
-                target,
-                t.Identifier(
-                  createNonSpecPropName(
-                    privateNonSpecPrefix,
-                    propNode.key.name,
+              instanceBody.push(
+                t.ExpressionStatement(
+                  t.AssignmentExpression(
+                    "=",
+                    t.MemberExpression(target, propName),
+                    rhs,
                   ),
                 ),
               );
             }
-
-            instanceBody.push(
-              t.ExpressionStatement(
-                t.AssignmentExpression(
-                  "=",
-                  lhs,
-                  propNode.value || path.scope.buildUndefinedNode(),
-                ),
-              ),
-            );
           } else {
             throw new Error("Internal error: unexpected property type");
           }
