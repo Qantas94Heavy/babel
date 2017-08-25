@@ -7,18 +7,18 @@ function increment() {
 var Point = function () {
   function Point() {
     babelHelpers.classCallCheck(this, Point);
-    var _private_field_obj = {};
 
-    _private_class_wm.set(this, _private_field_obj);
+    _private.x.set(this, increment());
 
-    _private_field_obj.x = increment();
     Object.defineProperty(this, "a", {
       configurable: true,
       enumerable: true,
       writable: true,
       value: increment()
     });
-    _private_field_obj.y = increment();
+
+    _private.y.set(this, increment());
+
     Object.defineProperty(this, "b", {
       configurable: true,
       enumerable: true,
@@ -31,14 +31,16 @@ var Point = function () {
   babelHelpers.createClass(Point, [{
     key: "getValues",
     value: function getValues() {
-      return [babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x, this.a, babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y, this.b, this.c];
+      return [babelHelpers.privateFieldsGetSpec(_private, this, "x"), this.a, babelHelpers.privateFieldsGetSpec(_private, this, "y"), this.b, this.c];
     }
   }]);
   return Point;
 }();
 
-var _private_class_wm = new WeakMap();
+var _private = Object.create(null);
 
+_private.x = new WeakMap();
+_private.y = new WeakMap();
 var values = new Point().getValues();
 assert.strictEqual(values[0], 0);
 assert.strictEqual(values[1], 1);

@@ -1,3 +1,0 @@
-{
-  "plugins": ["external-helpers", ["transform-class-properties", {"spec": true, "loose":true}], "syntax-class-properties"]
-}

@@ -2,53 +2,49 @@ class Point {
   constructor(x = 0, y = 0) {
     _initialiseProps.call(this);
 
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x = +x;
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y = +y;
+    babelHelpers.privateFieldsSetSpec(_private, this.constructor, "x", +x);
+    babelHelpers.privateFieldsSetSpec(_private, this, "y", +y);
   }
 
   get x() {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x;
+    return babelHelpers.privateFieldsGetSpec(_private, this.constructor, "x");
   }
 
   set x(value) {
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x = +value;
+    babelHelpers.privateFieldsSetSpec(_private, this.constructor, "x", +value);
   }
 
   get y() {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y;
+    return babelHelpers.privateFieldsGetSpec(_private, this, "y");
   }
 
   set y(value) {
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y = +value;
+    babelHelpers.privateFieldsSetSpec(_private, this, "y", +value);
   }
 
   equals(p) {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x === babelHelpers.privateFieldsCheckSpec(_private_class_wm, p, "x").x && babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y === babelHelpers.privateFieldsCheckSpec(_private_class_wm, p, "y").y;
+    return babelHelpers.privateFieldsGetSpec(_private, this.constructor, "x") === babelHelpers.privateFieldsGetSpec(_private, p, "x") && babelHelpers.privateFieldsGetSpec(_private, this, "y") === babelHelpers.privateFieldsGetSpec(_private, p, "y");
   }
 
   toString() {
-    return `Point<${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x},${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y}>`;
+    return `Point<${babelHelpers.privateFieldsGetSpec(_private, this.constructor, "x")},${babelHelpers.privateFieldsGetSpec(_private, this, "y")}>`;
   }
 
   test() {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this.constructor, "x").x;
+    return babelHelpers.privateFieldsGetSpec(_private, this.constructor, "x");
   }
 
 }
 
-var _private_class_wm = new WeakMap();
+var _private = Object.create(null);
 
-var _private_field_Point = {};
-
-_private_class_wm.set(Point, _private_field_Point);
+_private.x = new WeakMap();
+_private.y = new WeakMap();
 
 var _initialiseProps = function () {
-  var _private_field_obj = {};
+  _private.x.set(this.constructor, 1);
 
-  _private_class_wm.set(this, _private_field_obj);
-
-  _private_field_Point.x = 1;
-  _private_field_obj.y = 2;
+  _private.y.set(this, 2);
 };
 
 const point = new Point(20, 6);

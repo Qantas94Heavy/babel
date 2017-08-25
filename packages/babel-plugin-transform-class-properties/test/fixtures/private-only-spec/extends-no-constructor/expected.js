@@ -2,35 +2,38 @@ class Foo {}
 
 class Point extends Foo {
   constructor(...args) {
-    var _temp, _private_field_obj;
+    var _temp;
 
-    return _temp = super(...args), _private_field_obj = {}, _private_class_wm.set(this, _private_field_obj), _private_field_obj.x = 0, _private_field_obj.y = 0, _temp;
+    return _temp = super(...args), _private.x.set(this, 0), _private.y.set(this, 0), _temp;
   }
 
   get x() {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x;
+    return babelHelpers.privateFieldsGetSpec(_private, this, "x");
   }
 
   set x(value) {
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x = +value;
+    babelHelpers.privateFieldsSetSpec(_private, this, "x", +value);
   }
 
   get y() {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y;
+    return babelHelpers.privateFieldsGetSpec(_private, this, "y");
   }
 
   set y(value) {
-    babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y = +value;
+    babelHelpers.privateFieldsSetSpec(_private, this, "y", +value);
   }
 
   equals(p) {
-    return babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x === babelHelpers.privateFieldsCheckSpec(_private_class_wm, p, "x").x && babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y === babelHelpers.privateFieldsCheckSpec(_private_class_wm, p, "y").y;
+    return babelHelpers.privateFieldsGetSpec(_private, this, "x") === babelHelpers.privateFieldsGetSpec(_private, p, "x") && babelHelpers.privateFieldsGetSpec(_private, this, "y") === babelHelpers.privateFieldsGetSpec(_private, p, "y");
   }
 
   toString() {
-    return `Point<${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "x").x},${babelHelpers.privateFieldsCheckSpec(_private_class_wm, this, "y").y}>`;
+    return `Point<${babelHelpers.privateFieldsGetSpec(_private, this, "x")},${babelHelpers.privateFieldsGetSpec(_private, this, "y")}>`;
   }
 
 }
 
-var _private_class_wm = new WeakMap();
+var _private = Object.create(null);
+
+_private.x = new WeakMap();
+_private.y = new WeakMap();

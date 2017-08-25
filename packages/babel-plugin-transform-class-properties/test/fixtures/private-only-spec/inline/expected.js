@@ -1,27 +1,27 @@
 class A {
   constructor() {
-    var _private_field_obj = {};
+    _private.x.set(this, void 0);
 
-    _private_class_wm.set(this, _private_field_obj);
-
-    _private_field_obj.x = void 0;
-    _private_field_obj.y = void 0;
+    _private.y.set(this, void 0);
   }
 
 }
 
-var _private_class_wm = new WeakMap();
+var _private = Object.create(null);
+
+_private.x = new WeakMap();
+_private.y = new WeakMap();
 
 class B {
   constructor() {
-    var _private_field_obj2 = {};
+    _private2.x.set(this, 0);
 
-    _private_class_wm2.set(this, _private_field_obj2);
-
-    _private_field_obj2.x = 0;
-    _private_field_obj2.y = 1;
+    _private2.y.set(this, 1);
   }
 
 }
 
-var _private_class_wm2 = new WeakMap();
+var _private2 = Object.create(null);
+
+_private2.x = new WeakMap();
+_private2.y = new WeakMap();
